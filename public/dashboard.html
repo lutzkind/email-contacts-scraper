@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Email Contacts Scraper Dashboard</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 0; padding: 24px; background: #0f172a; color: #e5e7eb; }
+      .layout { display: grid; grid-template-columns: 360px 1fr; gap: 16px; }
+      .panel { background: #111827; border: 1px solid #1f2937; border-radius: 12px; padding: 16px; }
+      textarea, input, button { width: 100%; box-sizing: border-box; padding: 10px 12px; margin-top: 8px; font: inherit; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: #e5e7eb; }
+      button { background: #0284c7; cursor: pointer; }
+      table { width: 100%; border-collapse: collapse; font-size: 14px; }
+      th, td { border-bottom: 1px solid #1f2937; padding: 8px; text-align: left; vertical-align: top; }
+      .muted { color: #94a3b8; }
+      .toolbar { display: flex; gap: 8px; margin-bottom: 12px; }
+      @media (max-width: 1000px) { .layout { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <section class="panel">
+        <h1>Email Contacts Scraper</h1>
+        <p class="muted">Paste domains or URLs. The tool crawls home/contact/about pages through Crawl4AI and stores emails, socials, and artifacts.</p>
+        <form id="job-form">
+          <label>Domains / URLs</label>
+          <textarea id="targets" placeholder="example.com&#10;https://example.org/contact"></textarea>
+          <label>Concurrency</label>
+          <input id="concurrency" type="number" min="1" max="10" value="2">
+          <label>Max pages per site</label>
+          <input id="max-pages" type="number" min="1" max="20" value="6">
+          <button type="submit">Create job</button>
+        </form>
+        <p id="message" class="muted"></p>
+      </section>
+      <section class="panel">
+        <div class="toolbar">
+          <button id="refresh" type="button">Refresh</button>
+          <button id="logout" type="button">Logout</button>
+        </div>
+        <h2>Jobs</h2>
+        <div id="jobs"></div>
+        <h2>Results</h2>
+        <div id="results" class="muted">Select a job.</div>
+      </section>
+    </div>
+    <script>
+      let activeJobId = null;
+
+      async function request(path, options = {}) {
+        const response = await fetch(path, options);
+        if (response.status === 401) {
+          location.href = "/login";
+          return null;
+        }
+        return response;
+      }
+
+      async function loadJobs() {
+        const response = await request("/jobs");
+        if (!response) return;
+        const payload = await response.json();
+        const jobs = payload.jobs || [];
+        const container = document.getElementById("jobs");
+        container.innerHTML = jobs.map((job) => `
+          <div style="padding:12px;border:1px solid #1f2937;border-radius:10px;margin-bottom:10px;cursor:pointer" onclick="loadResults('${job.id}')">
+            <div><strong>${job.id}</strong></div>
+            <div class="muted">${job.status} · ${job.successCount}/${job.totalTargets} ok</div>
+          </div>
+        `).join("") || '<div class="muted">No jobs yet.</div>';
+        if (activeJobId) {
+          loadResults(activeJobId);
+        }
+      }
+
+      async function loadResults(jobId) {
+        activeJobId = jobId;
+        const response = await request(`/jobs/${jobId}/results?limit=100`);
+        if (!response) return;
+        const payload = await response.json();
+        const rows = payload.results || [];
+        document.getElementById("results").innerHTML = rows.length ? `
+          <table>
+            <thead><tr><th>Input</th><th>Primary email</th><th>Status</th><th>Contact page</th></tr></thead>
+            <tbody>
+              ${rows.map((row) => `
+                <tr>
+                  <td>${row.input}</td>
+                  <td>${row.primaryEmail || ""}</td>
+                  <td>${row.status}</td>
+                  <td>${row.contactPageUrl || ""}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        ` : '<div class="muted">No results yet.</div>';
+      }
+
+      document.getElementById("job-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const response = await request("/jobs", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: document.getElementById("targets").value,
+            concurrency: Number(document.getElementById("concurrency").value),
+            maxPagesPerSite: Number(document.getElementById("max-pages").value),
+          }),
+        });
+        if (!response) return;
+        const payload = await response.json();
+        document.getElementById("message").textContent = response.ok ? `Queued ${payload.job.id}` : (payload.error || "Request failed.");
+        if (response.ok) {
+          activeJobId = payload.job.id;
+          document.getElementById("targets").value = "";
+          loadJobs();
+        }
+      });
+
+      document.getElementById("refresh").addEventListener("click", loadJobs);
+      document.getElementById("logout").addEventListener("click", async () => {
+        await fetch("/api/auth/logout", { method: "POST" });
+        location.href = "/login";
+      });
+
+      loadJobs();
+      setInterval(loadJobs, 5000);
+    </script>
+  </body>
+</html>
