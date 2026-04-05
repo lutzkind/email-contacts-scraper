@@ -8,6 +8,7 @@ RUN apt-get update \
 
 COPY package*.json ./
 RUN npm install --omit=dev
+RUN npx playwright install --with-deps chromium
 
 COPY . .
 

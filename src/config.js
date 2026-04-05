@@ -26,6 +26,13 @@ module.exports = {
   crawl4aiBaseUrl: process.env.CRAWL4AI_BASE_URL || null,
   crawl4aiBearerToken: process.env.CRAWL4AI_BEARER_TOKEN || null,
   emailEnrichmentTimeoutMs: intFromEnv("EMAIL_ENRICHMENT_TIMEOUT_MS", 20000),
-  emailEnrichmentMaxPages: intFromEnv("EMAIL_ENRICHMENT_MAX_PAGES", 6),
+  emailEnrichmentMaxPages: intFromEnv("EMAIL_ENRICHMENT_MAX_PAGES", 12),
   emailEnrichmentConcurrency: intFromEnv("EMAIL_ENRICHMENT_CONCURRENCY", 2),
+  emailEnrichmentRetryCount: intFromEnv("EMAIL_ENRICHMENT_RETRY_COUNT", 2),
+  browserFallbackEnabled: String(process.env.BROWSER_FALLBACK_ENABLED || "true") !== "false",
+  browserFallbackTimeoutMs: intFromEnv("BROWSER_FALLBACK_TIMEOUT_MS", 25000),
+  browserFallbackWaitMs: intFromEnv("BROWSER_FALLBACK_WAIT_MS", 1500),
+  directFetchUserAgent:
+    process.env.DIRECT_FETCH_USER_AGENT ||
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0 Safari/537.36",
 };

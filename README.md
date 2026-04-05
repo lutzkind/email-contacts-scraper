@@ -1,6 +1,6 @@
 # Email Contacts Scraper
 
-Standalone website email scraper that accepts a list of domains or URLs, crawls the website plus likely contact/about pages through **Crawl4AI**, and stores:
+Standalone website email scraper that accepts a list of domains or URLs, crawls the website plus likely contact/about/team/location pages using **direct HTML fetch with Crawl4AI fallback** plus an optional **browser-rendered fallback** for blocked or JS-heavy pages, and stores:
 
 - primary email
 - all discovered emails
@@ -48,8 +48,13 @@ curl -L "http://localhost:3015/jobs/<job-id>/download?format=json" -o results.js
 - `CRAWL4AI_BASE_URL`
 - `CRAWL4AI_BEARER_TOKEN`
 - `EMAIL_ENRICHMENT_TIMEOUT_MS` default `20000`
-- `EMAIL_ENRICHMENT_MAX_PAGES` default `6`
+- `EMAIL_ENRICHMENT_MAX_PAGES` default `12`
 - `EMAIL_ENRICHMENT_CONCURRENCY` default `2`
+- `EMAIL_ENRICHMENT_RETRY_COUNT` default `2`
+- `BROWSER_FALLBACK_ENABLED` default `true`
+- `BROWSER_FALLBACK_TIMEOUT_MS` default `25000`
+- `BROWSER_FALLBACK_WAIT_MS` default `1500`
+- `DIRECT_FETCH_USER_AGENT` optional override for direct page fetches
 
 ## Local run
 
