@@ -1,11 +1,9 @@
 const express = require("express");
 const path = require("path");
 const crypto = require("crypto");
-const { createAuth } = require("./auth");
 
 function createApp({ store, config, emailEnricher }) {
   const app = express();
-  const auth = createAuth({ store, config });
 
   app.use(express.json({ limit: "2mb" }));
   app.use("/assets", express.static(path.join(__dirname, "..", "public")));
@@ -14,38 +12,13 @@ function createApp({ store, config, emailEnricher }) {
     res.json({ ok: true, crawl4aiConfigured: emailEnricher.isConfigured() });
   });
 
-  app.get("/", (req, res) => {
-    if (!auth.isConfigured()) {
-      return res.redirect("/dashboard");
-    }
-    return res.redirect(auth.currentSession(req) ? "/dashboard" : "/login");
+  app.get("/", (_req, res) => {
+    return res.redirect("/dashboard");
   });
 
-  app.get("/login", (req, res) => {
-    if (!auth.isConfigured()) {
-      return res.redirect("/dashboard");
-    }
-    if (auth.currentSession(req)) {
-      return res.redirect("/dashboard");
-    }
-    res.sendFile(path.join(__dirname, "..", "public", "login.html"));
-  });
-
-  app.post("/api/auth/login", (req, res) => auth.handleLogin(req, res));
-  app.post("/api/auth/logout", withAuth(auth), (req, res) => auth.handleLogout(req, res));
-  app.get("/api/auth/session", withAuth(auth), (req, res) => {
-    res.json({
-      authenticated: true,
-      username: req.authSession.username,
-      expiresAt: req.authSession.expiresAt,
-    });
-  });
-
-  app.get("/dashboard", withAuth(auth), (_req, res) => {
+  app.get("/dashboard", (_req, res) => {
     res.sendFile(path.join(__dirname, "..", "public", "dashboard.html"));
   });
-
-  app.use("/jobs", withAuth(auth));
 
   app.get("/jobs", (_req, res) => {
     res.json({ jobs: store.listJobs() });
@@ -133,10 +106,6 @@ function createApp({ store, config, emailEnricher }) {
   });
 
   return app;
-}
-
-function withAuth(auth) {
-  return (req, res, next) => auth.requireAuth(req, res, next);
 }
 
 function collectTargets(body) {
