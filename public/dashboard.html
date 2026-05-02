@@ -119,7 +119,7 @@
 
       document.getElementById("refresh").addEventListener("click", loadJobs);
       document.getElementById("logout").addEventListener("click", async () => {
-        await fetch("/api/auth/logout", { method: "POST" });
+        window.location.href = "https://auth.luxeillum.com/oauth2/sign_out";
         location.href = "/login";
       });
 
